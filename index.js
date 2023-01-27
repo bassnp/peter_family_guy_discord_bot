@@ -103,7 +103,7 @@ function get_embed(interaction, options) { //title, value, track, title2, value2
     })
     
     if (options.track !== undefined) {
-        embed // Xtra feilds
+        embed // Extra feilds
             .setThumbnail(options.track.thumbnail)
             .setTitle(options.track.url)
 	        .setURL(options.track.url)
@@ -179,40 +179,15 @@ client.player.on("queueEnd", async (queue) => {
     await delete_messages()
 })
 
-// For the memes
+// For the memes, also all real games on Steam btw
 const game_library = [
-    "Futa Paradise",
-    "Futa Spell",
-    "Latex Tentacles",
-    "Furry Sweeper",
-    "EdgeLords",
-    "Futapunk 2069",
-    "Juicy Futa",
-    "OctoFurry",
-    "Futanari Quest",
-    "Furry Feet",
-    "Hentai Crush",
-    "Hentai Dojo",
-    "Hentai Weed PuZZles",
-    "Succubus Farm",
-    "Desktop Girlfriend",
-    "Hot Tub Simulator",
-    "Kidnapped Girl",
-    "Sexy Sniper",
-    "HOT GIRLS VR",
-    "Anime Girls VR",
-    "Girls Dance VR",
-    "Virtual Reality Girls",
-    "Grand Strokers",
-    "Seduction 誘惑",
-    "Femboy Bangers 2",
-    "Furry Hentai Quest",
-    "Femboys & Fries",
-    "Furry Feet - Femboys!",
-    "My Stepbro is a Femboy",
-    "Grand Theft Auto V",
-    "Arma 3",
-    "7 Days to Die",
+    "Futa Paradise", "Futa Spell", "Latex Tentacles", "Furry Sweeper", "EdgeLords",
+    "Futapunk 2069", "Juicy Futa", "OctoFurry", "Futanari Quest", "Furry Feet",
+    "Hentai Crush", "Hentai Dojo", "Hentai Weed PuZZles", "Succubus Farm", "Desktop Girlfriend",
+    "Hot Tub Simulator", "Kidnapped Girl", "Sexy Sniper", "HOT GIRLS VR", "Anime Girls VR",
+    "Girls Dance VR", "Virtual Reality Girls", "Grand Strokers", "Seduction 誘惑", "Femboy Bangers 2",
+    "Furry Hentai Quest", "Femboys & Fries", "Furry Feet - Femboys!", "My Stepbro is a Femboy", "Grand Theft Auto V",
+    "Arma 3", "7 Days to Die", " Bloons TD 6", "CS:GO", "Destiny 2"
 ]
 
 const commands = [
