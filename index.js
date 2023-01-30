@@ -1,10 +1,8 @@
-// not.bass#3945
 /*
-config.json = {
-    "bot_private_token": token string, ex. "123h1098238asdah980sdja98w",
-    "music_channel": channel name, ex. "music",
-}
+    not.bass#3945
+    1/30/2023
 */
+
 const CONFIG = require('./config.json');
 const TOKEN = CONFIG.bot_private_token
 const CHANNEL_NAME = CONFIG.music_channel
@@ -35,6 +33,42 @@ async function delete_messages() {
         .catch(console.error) 
 }
 
+// thx - https://discordjs.guide/popular-topics/embeds.html#embed-preview
+function embed_send(msg, options) { //title, value, track, title2, value2) { 
+    log(`Sending embed for: ${options.value} ${msg.author ? msg.author.username : (msg.user ? msg.user.username : (" "))}`)
+   
+    const embed = new EmbedBuilder()
+	.setColor(0x31DE56)
+	.addFields({ 
+        name: options.title, 
+        value: options.value,
+        inline: true,
+    })
+    
+    if (options.track !== undefined) 
+        embed // Extra feilds
+            .setThumbnail(options.track.thumbnail)
+            .setTitle(options.track.url)
+	        .setURL(options.track.url)
+            .setFooter({ text: `Duration: ${options.track.duration}` })
+            .setTimestamp()
+            .addFields({ 
+                name: "Authored by:", 
+                value: options.track.author,
+                inline: true,
+            })
+            //.setAuthor({ name: options.track.url, url: options.track.url })
+        
+
+    if (options.title2 !== undefined && value2 !== undefined) 
+        embed.addFields({ 
+            name: options.title2, 
+            value: options.value2,
+        })
+
+    return msg.token ? msg.reply({embeds: [embed]}) : msg.send({embeds: [embed]})
+}
+
 // Play helper func
 async function play(queue, msg, song, search_type, force_skip, shuffle) {
     if (!queue.connection) 
@@ -58,15 +92,12 @@ async function play(queue, msg, song, search_type, force_skip, shuffle) {
     }
 
     // Query
-    const result = await client.player.search(song, {
+    const result = await client.player.search(is_playlist ? song : song + " audio", {
         requestedBy: msg.user,
         searchEngine: query_type,
     })
 
     // Extra params.
-    if (shuffle) 
-        queue.shuffle()
-
     if (force_skip) {
         if (is_playlist) {
             queue.clear()
@@ -79,45 +110,19 @@ async function play(queue, msg, song, search_type, force_skip, shuffle) {
         await is_playlist ? queue.addTracks(result.tracks) : queue.addTrack(result.tracks[0])
     }
 
+    if (shuffle) 
+        queue.shuffle()
+
     // Play it
     if (!queue.playing)
         await queue.play()
 
     if (result.tracks.length === 0) {
-        return get_embed(msg, {
+        return embed_send(msg, {
             title: `Song could not be added`,
             value: `0 results for "${song}"`
         })
     } 
-}
-
-// thx - https://discordjs.guide/popular-topics/embeds.html#embed-preview
-function get_embed(interaction, options) { //title, value, track, title2, value2) { 
-    log(`Sending embed for: ${options.value} ${interaction.author ? interaction.author.username : (interaction.user ? interaction.user.username : (" "))}`)
-   
-    const embed = new EmbedBuilder()
-	.setColor(0x31DE56)
-	.addFields({ 
-        name: options.title, 
-        value:options.value,
-    })
-    
-    if (options.track !== undefined) {
-        embed // Extra feilds
-            .setThumbnail(options.track.thumbnail)
-            .setTitle(options.track.url)
-	        .setURL(options.track.url)
-            .setFooter({ text: `Duration: ${options.track.duration}` })
-            //.setAuthor({ name: options.track.url, url: options.track.url })
-    }
-
-    if (options.title2 !== undefined && value2 !== undefined) 
-        embed.addFields({ 
-            name: options.title2, 
-            value: options.value2,
-        })
-
-    return embed
 }
 
 // More flags == more smarts
@@ -149,25 +154,21 @@ client.player.on("trackStart", async (queue, track) => {
     log(`\nNow playing: ${track.title}`)
     await delete_messages()
 
-    const new_embed = get_embed(curr_channel, {
+    embed_send(curr_channel, {
         title: `Now playing:`, 
         value: `${track.title}`, 
         track: track
-    })  
-    
-    curr_channel.send({ embeds: [new_embed] })
+    })
 })
 client.player.on("trackAdd", async (queue, track) => {
     log(`\nAdding: ${track.title}`)
     await delete_messages()
     if (!track.url.includes(".com/playlist")) { 
-        const new_embed = get_embed(curr_channel, {
+        embed_send(curr_channel, {
             title: `\nAdded to the queue:`, 
             value: `${track.title}`, 
             track: track
         })  
-        
-        curr_channel.send({ embeds: [new_embed] })
     }
 })
 client.player.on("botDisconnect", async (queue) => {
@@ -216,7 +217,11 @@ const commands = [
     {
         name: "disconnect",
         description: "Stops the song and disconnects the bot",
-    }
+    },
+    {
+        name: "80",
+        description: "Plays Jake Gaskin's 80's playlist.",
+    },
 ]
 
 client.on("ready", async () => {
@@ -226,12 +231,13 @@ client.on("ready", async () => {
     // Setup commands
     const guilds = client.guilds.cache.map(guild => guild.id)
     log(guilds)
+
     for(var i = 0; i < guilds.length; i++) {
         const guild = client.guilds.cache.get(guilds[i])
         await guild.commands.set(commands)
             .catch(console.error)
 
-        log(`- Clearing ${CHANNEL_NAME}`)
+        log(`- Clearing "${CHANNEL_NAME}" in "${guild.name}"`)
 
         const music_channel = guild.channels.cache.find(
             channel => channel.name.toLowerCase() === CHANNEL_NAME
@@ -247,7 +253,7 @@ client.on("ready", async () => {
                         await new Promise(r => setTimeout(r, 1000))
                     }
                 })
-                log(`- ${CHANNEL_NAME} cleared`)
+                log(`- "${CHANNEL_NAME}" cleared`)
             })
             .catch(console.error) 
     }
@@ -283,112 +289,104 @@ client.on("interactionCreate", async (interaction) => {
     // Setup
     curr_channel = interaction.channel
     if(curr_channel.name != CHANNEL_NAME)
-        return interaction.reply({
-            embeds: [get_embed(interaction,{ 
-                title: "Wrong channel", 
-                value: `Go to the ${CHANNEL_NAME}`
-            })], 
+        return await embed_send(interaction,{ 
+            title: "Wrong channel", 
+            value: `Go to the ${CHANNEL_NAME}`,
         })
 
     log(`Found command in #${curr_channel.name} from "${interaction.user.username}"`)
     const queue = await client.player.createQueue(interaction.guild)
 
-    if (interaction.commandName === "play") {
-        const token = interaction.options.get("query").value.trim()
-        if (token.length > 2) {
-            play(queue, interaction, token, QueryType.AUTO, false, false)
-            return await interaction.reply({
-                embeds: [get_embed(interaction,{ 
+    switch (interaction.commandName) {
+        /* Plays a song  */
+        case "play": 
+            const token = interaction.options.get("query").value.trim()
+            if (token.length > 2) {
+                play(queue, interaction, token, QueryType.AUTO, false, false)
+                return await embed_send(interaction,{ 
                     title: "Searching for:", 
                     value: token,
-                })], 
-            })
-        }
-        else if(token.length <= 2) 
-            return await interaction.reply({
-                embeds: [get_embed(interaction, {
+                })
+            }
+            else if(token.length <= 2) 
+                return await embed_send(interaction, {
                     title: "Nopeity nope", 
                     value: `Invalid query input, not long enough`,
-                })], 
-            })
-        else 
-            return await interaction.reply({
-                embeds: [get_embed(interaction, {
+                })
+            else 
+                return await embed_send(interaction, {
                     title: "Ur dumb as shit", 
                     value: `Invalid query input`,
-                })], 
             })
-    }
-    else if (interaction.commandName === "skip") {
-        // Check playing before skip
-        if (queue.playing) {
-            // Cache title
-            const song = queue.nowPlaying()
-            // Cont.
-            await queue.skip()
-            return await interaction.reply({
-                embeds: [get_embed(interaction,{ 
+
+        /* Skips the current song  */
+        case "skip": 
+            // Check playing before skip
+            if (queue.playing) {
+                // Cache title
+                const song = queue.nowPlaying()
+                // Cont.
+                await queue.skip()
+                return await embed_send(interaction,{ 
                     title: `Removed:`, 
                     value: `${song.title}`, 
                     track: song,
-                })], 
-            })
-        }
-        else
-        return await interaction.reply({
-            embeds: [get_embed(interaction, {
+                })
+            }
+            else
+            return await embed_send(interaction, {
                 title: "Ur dumb as shit", 
                 value: `No songs are currently playing idiot`,
-            })], 
-        })
-    } 
-    else if (interaction.commandName === "queue") {
-        // Send breif info about the queue
-        return await interaction.reply({
-            embeds: [
-                get_embed(interaction,{ 
-                    track: (queue.playing ? queue.nowPlaying() : undefined),
+            })
 
-                    title: `Now playing:`, 
-                        value: (queue.playing ? `${queue.nowPlaying().title}` : "No songs are currently playing"), 
+        /* Shows the queue of songs */
+        case "queue":
+            // Send breif info about the queue
+            return await embed_send(interaction,{ 
+                track: (queue.playing ? queue.nowPlaying() : undefined),
 
-                    title2: `Queue:`, 
-                        value2: `There ${queue.tracks.length == 1 ? `is 1 more song` : `${queue.tracks.length} more songs`} in the queue`,
-                })
-            ], 
-        })
-    } 
-    else if (interaction.commandName === "shuffle") {
-        // Making sure the queue can be shuffled
-        if (queue.tracks.length > 1) {
-            await queue.shuffle()
-            return await interaction.reply({
-                embeds: [get_embed(interaction, {
+                title: `Now playing:`, 
+                    value: (queue.playing ? `${queue.nowPlaying().title}` : "No songs are currently playing"), 
+
+                title2: `Queue:`, 
+                    value2: `There ${queue.tracks.length == 1 ? `is 1 more song` : `${queue.tracks.length} more songs`} in the queue`,
+            })
+
+        /* Shuffles the queue of songs */
+        case "shuffle":
+            // Making sure the queue can be shuffled
+            if (queue.tracks.length > 1) {
+                await queue.shuffle()
+                return await embed_send(interaction, {
                     title: `Doodoofart`, 
                     value: `Juggled the queue like how your two dads juggles my balls`,
-                })], 
-            })
-        }
-        else
-            return await interaction.reply({
-                embeds: [get_embed(interaction, {
+                })
+            }
+            else
+                return await embed_send(interaction, {
                     title: `Fartdoodoo`, 
                     value: `Not enough songs in the queue to be able to shuffel em`,
-                })], 
-            })
-    } 
-    else if (interaction.commandName === "disconnect") {
-        await queue.destroy(true)
-        await interaction.reply({
-            embeds: [get_embed(interaction, {
+                })
+
+        /* Stops the song and disconnects the bot */
+        case "disconnect":
+            await queue.destroy(true)
+            await embed_send(interaction, {
                 title: `Leaving, cya :wave:`, 
                 value: `......`,
-            })], 
-        })
-        await delete_messages()
-    }
+            })
+            return await delete_messages()
 
-    interaction.replied = true
+        /* Plays Jake Gaskin's 80's playlist. */
+        case "80":
+            play(queue, interaction, "https://open.spotify.com/playlist/6h7i6tyP3oAevKCQXB2iXz?si=ee70df58433542bf", QueryType.SPOTIFY_PLAYLIST, false, true)
+            await embed_send(interaction,{ 
+                title: "Short btw", 
+                value: "Conner is a little fucking gremlin",
+            })
+            return queue.shuffle()
+        default: break
+    }
 })
 
 // Begin
